@@ -1,0 +1,14 @@
+[
+  {
+    "title":"Book1",
+    "author":"John Doe",
+    "genre":"Romance",
+    "year_published":2001
+  },
+  {
+    "title":"Book2",
+    "author":"Jane Smith",
+    "genre":"Dystopian",
+    "year_published":2005
+  }
+]
