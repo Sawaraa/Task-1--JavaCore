@@ -13,6 +13,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+/**
+ * ParsingJsonFile is responsible for reading and parsing JSON files
+ * from a specified folder and collecting statistics on specific attributes.
+ * It supports parallel processing using a thread pool.
+ */
 public class ParsingJsonFile {
 
     private final String folderPath;
@@ -22,11 +27,11 @@ public class ParsingJsonFile {
     }
 
     /**
-     * Читає всі JSON-файли в папці паралельно і збирає статистику.
+     * Reads all JSON files in the folder in parallel and collects statistics.
      *
-     * @param attributeNames список атрибутів, які потрібно враховувати
-     * @return Statistics з усіма файлами
-     * @throws IOException
+     * @param attributeNames list of attribute names to include in statistics
+     * @param threadCount    number of threads to use in the thread pool
+     * @return Statistics object containing combined statistics for all files
      */
     public Statistics readAllJsonFiles(List<String> attributeNames, int threadCount) throws IOException {
 
@@ -37,12 +42,13 @@ public class ParsingJsonFile {
             throw new IOException("Folder not found or empty: " + folderPath);
         }
 
-        // Використовуємо пул потоків — стільки потоків, скільки ядер
+
+        // Create a thread pool with the specified number of threads
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);
 
         List<Future<Statistics>> futures = new ArrayList<>();
 
-        // Кожен файл — окремий таск
+        // Submit each file as a separate task to the thread pool
         for (File file : files) {
             futures.add(executor.submit(() -> {
                 System.out.println("Thread " + Thread.currentThread().getName() + " is processing file: " + file.getName());
@@ -54,7 +60,7 @@ public class ParsingJsonFile {
 
         Statistics finalStats = new Statistics();
 
-        // Збираємо всі локальні статистики і об’єднуємо
+        // Combine results from all threads into a single Statistics object
         for (Future<Statistics> future : futures) {
             try {
                 Statistics localStats = future.get();
@@ -69,12 +75,11 @@ public class ParsingJsonFile {
     }
 
     /**
-     * Парсить один JSON-файл і повертає локальну Statistics.
+     * Parses a single JSON file and returns its local Statistics.
      *
-     * @param file           JSON-файл
-     * @param attributeNames список атрибутів, які потрібно враховувати
-     * @return локальна Statistics
-     * @throws IOException
+     * @param file           JSON file to parse
+     * @param attributeNames list of attribute names to include in statistics
+     * @return local Statistics object for the file
      */
     private Statistics readJsonFile(File file, List<String> attributeNames) throws IOException {
         Statistics stats = new Statistics();
@@ -82,11 +87,12 @@ public class ParsingJsonFile {
 
         try (JsonParser parser = factory.createParser(file)) {
 
+            // Expect a JSON array at the top level
             if (parser.nextToken() != JsonToken.START_ARRAY) {
                 throw new IOException("Expected JSON array in " + file.getName());
             }
 
-            // читаємо об’єкти масиву
+            // Read each object in the array
             while (parser.nextToken() != JsonToken.END_ARRAY) {
 
                 while (parser.nextToken() != JsonToken.END_OBJECT) {
@@ -102,7 +108,13 @@ public class ParsingJsonFile {
     }
 
     /**
-     * Обробка одного атрибута в JSON-об'єкті.
+     * Processes a single attribute in a JSON object.
+     * If the attribute is in the list of required attributes, it is added to the statistics.
+     *
+     * @param currentName    attribute name
+     * @param parser         JsonParser positioned at the value
+     * @param attributeNames list of attributes to include in statistics
+     * @param stats          Statistics object to update
      */
     private void processAttribute(String currentName,
                                   JsonParser parser,

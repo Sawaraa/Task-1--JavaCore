@@ -14,7 +14,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * XmlStatistic is responsible for generating XML files from a Statistics object.
+ * Each attribute in the statistics will generate a separate XML file.
+ */
 public class XmlStatistic {
+
+    /**
+     * Generates XML files for all attributes in the provided Statistics object.
+     *
+     * @param statistics   Statistics object containing data to write
+     * @param outputFolder folder path where XML files will be saved
+     */
     public void generateAllXmlFiles(Statistics statistics, String outputFolder) throws Exception {
 
         Map<String, Map<String, Integer>> allStats = statistics.getAllStats();
@@ -24,6 +35,13 @@ public class XmlStatistic {
         }
     }
 
+    /**
+     * Generates a single XML file for a given attribute.
+     *
+     * @param statistics   Statistics object containing the attribute data
+     * @param attributeName attribute name to generate XML for
+     * @param outputFolder folder path where the XML file will be saved
+     */
     private void generateSingleXmlFile(Statistics statistics,
                                        String attributeName,
                                        String outputFolder) throws Exception {
@@ -35,7 +53,7 @@ public class XmlStatistic {
             return;
         }
 
-        // сортуємо за спаданням
+        // Sort the values by count descending
         List<Map.Entry<String, Integer>> sorted = new ArrayList<>(values.entrySet());
         sorted.sort((a, b) -> b.getValue().compareTo(a.getValue()));
 
@@ -44,11 +62,17 @@ public class XmlStatistic {
         writeXml(attributeName, sorted, fileName);
     }
 
+    /**
+     * Writes XML content for a given attribute and sorted values to a file.
+     *
+     * @param attributeName attribute name
+     * @param sorted        list of sorted key-value pairs
+     * @param fileName      file path to write the XML
+     */
     private void writeXml(String attributeName,
                           List<Map.Entry<String, Integer>> sorted,
                           String fileName) throws Exception {
 
-        // 1) Генеруємо XML у String (без форматування)
         XMLOutputFactory factory = XMLOutputFactory.newInstance();
         StringWriter rawXml = new StringWriter();
         XMLStreamWriter writer = factory.createXMLStreamWriter(rawXml);
@@ -62,24 +86,22 @@ public class XmlStatistic {
 
             writer.writeStartElement("value");
             writer.writeCharacters(entry.getKey());
-            writer.writeEndElement(); // </value>
+            writer.writeEndElement();
 
             writer.writeStartElement("count");
             writer.writeCharacters(String.valueOf(entry.getValue()));
-            writer.writeEndElement(); // </count>
+            writer.writeEndElement();
 
-            writer.writeEndElement(); // </item>
+            writer.writeEndElement();
         }
 
-        writer.writeEndElement(); // </statistics>
+        writer.writeEndElement();
         writer.writeEndDocument();
         writer.close();
 
-        // 2) Форматуємо XML через Transformer
         Transformer transformer = TransformerFactory.newInstance().newTransformer();
 
         transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-        // кількість пробілів
         transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
 
         StreamSource xmlInput = new StreamSource(new StringReader(rawXml.toString()));

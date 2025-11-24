@@ -15,7 +15,7 @@ public class Main {
             List<String> attributes = Arrays.stream(scanner.nextLine().split(","))
                     .map(String::trim).toList();
 
-            System.out.print("Введіть шлях для збереження XML: "); //C:\Users\Admin\Desktop\Task-1\xml
+            System.out.print("Введіть шлях для збереження XML: "); //C:\Users\Admin\Desktop\Task-1\xml C:\Users\Admin\Desktop\xml
             String xmlPath = scanner.nextLine();
 
             ParsingJsonFile parsing = new ParsingJsonFile(folderPath);

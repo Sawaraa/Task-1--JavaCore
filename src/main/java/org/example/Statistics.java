@@ -8,7 +8,8 @@ import java.util.stream.Collectors;
 
 public class Statistics {
 
-    // Зберігаємо потокобезпечну структуру
+    // Thread-safe map to store statistics:
+    // attributeName -> (value -> count)
     private final ConcurrentHashMap<String, ConcurrentHashMap<String, AtomicInteger>> stats;
 
     public Statistics() {
@@ -16,22 +17,22 @@ public class Statistics {
     }
 
     /**
-     * Додає значення(я) для атрибута.
-     * Якщо value містить кілька значень розділених комою, розділяє і додає кожне.
+     * Adds a value (or multiple comma-separated values) for a given attribute.
+     * If the value contains multiple entries separated by commas, each is added separately.
      *
-     * @param attributeName назва атрибута (наприклад "genre" або "author")
-     * @param value         значення атрибута (наприклад "Romance, Satire")
+     * @param attributeName name of the attribute (e.g., "genre" or "author")
+     * @param value         attribute value (e.g., "Romance, Satire")
      */
     public void addValue(String attributeName, String value) {
         if (attributeName == null || attributeName.isEmpty() || value == null || value.isEmpty()) {
             return;
         }
 
-        // Отримуємо або створюємо внутрішню map для атрибута
+        // Get or create the inner map for the attribute
         ConcurrentHashMap<String, AtomicInteger> attributeMap =
                 stats.computeIfAbsent(attributeName, k -> new ConcurrentHashMap<>());
 
-        // Розбиваємо по комі (видаляємо зайві пробіли) і інкрементуємо лічильник для кожного підзначення
+        // Split by comma (trim spaces) and increment count for each value
         String[] parts = value.split(",\\s*");
         for (String part : parts) {
             if (part.isEmpty()) continue;
@@ -42,11 +43,10 @@ public class Statistics {
     }
 
     /**
-     * Повертає копію статистики для конкретного атрибута у вигляді Map<value, count>.
-     * Повертається нова HashMap — зовнішній код не бачить AtomicInteger всередині.
+     * Returns a copy of the statistics for a specific attribute as Map<value, count>.
      *
-     * @param attributeName ім'я атрибута
-     * @return Map значень -> кількість
+     * @param attributeName the name of the attribute
+     * @return Map of value -> count
      */
     public Map<String, Integer> getStats(String attributeName) {
         ConcurrentHashMap<String, AtomicInteger> inner = stats.get(attributeName);
@@ -62,9 +62,9 @@ public class Statistics {
     }
 
     /**
-     * Повертає копію повної статистики: attribute -> (value -> count)
+     * Returns a copy of the entire statistics: attribute -> (value -> count)
      *
-     * @return Map копія всієї статистики
+     * @return Map copy of all statistics
      */
     public Map<String, Map<String, Integer>> getAllStats() {
         return stats.entrySet()
@@ -81,8 +81,9 @@ public class Statistics {
                 ));
     }
 
+
     /**
-     * Друкує статистику в консоль (для перевірки).
+     * Prints the statistics to the console
      */
     public void printStats() {
         getAllStats().forEach((attribute, map) -> {
@@ -92,10 +93,11 @@ public class Statistics {
     }
 
     /**
-     * Зливає іншу Statistics в цю (корисно при паралельній обробці,
-     * коли кожен потік збирає локальну Statistics і потім їх треба об'єднати).
+     * Merges another Statistics object into this one.
+     * Each stream collects local statistics
+     * and then it needs to be combined.
      *
-     * @param other інша статистика (безпечна для виклику)
+     * @param other another Statistics object (thread-safe to call)
      */
     public void merge(Statistics other) {
         if (other == null) return;
